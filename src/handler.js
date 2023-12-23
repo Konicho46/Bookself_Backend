@@ -79,7 +79,6 @@ const getAllItemsHandler = (request, h) =>
         return nameRegex.test(book.name);
     });
 
-
     if (reading) {
         filteredBooksName = items.filter(
             (book) => Number(book.reading) === Number(reading),
@@ -126,6 +125,13 @@ const getItemByIdHandler = (request, h) => {
 const editItemByIdHandler = (request, h) => 
 {
     const { bookId } = request.params;
+    const index = items.findIndex((book) => book.id === bookId);
+
+    if (index === -1)
+        return h.response({
+            status: 'fail',
+            message: 'Gagal memperbarui buku. Id tidak ditemukan',
+        }).code(404);
 
     const {
       name,
@@ -137,31 +143,24 @@ const editItemByIdHandler = (request, h) =>
       readPage,
       reading,
     } = request.payload;
-  
-    if (!name) 
-    {
-        return h.response({
-            status: 'fail',
-            message: 'Gagal memperbarui buku. Mohon isi nama buku',
-        }).code(400);
-    }
-  
-    if (parseInt(readPage) > parseInt(pageCount)) 
-    {
-        return h.response({
-            status: 'fail',
-            message:
-            'Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount',
-        }).code(400);
-    }
-  
+
     const finished = pageCount === readPage;
     const updatedAt = new Date().toISOString();
   
-    const index = items.findIndex((book) => book.id === bookId);
-  
-    if (index !== -1) 
-    {
+
+    if (name === "" || !name) {
+        return h.response({
+            status: "fail",
+            message: "Gagal memperbarui buku. Mohon isi nama buku",
+        }).code(400)
+    }
+
+
+    if (
+        (parseInt(readPage) <= parseInt(pageCount)) && 
+        (reading === "false" || reading === "true")
+    ) {
+
         items[index] = {
             ...items[index],
             name,
@@ -175,17 +174,20 @@ const editItemByIdHandler = (request, h) =>
             finished,
             updatedAt,
         };
-  
+
         return h.response({
             status: 'success',
             message: 'Buku berhasil diperbarui',
         }).code(200);
     }
-  
-    return h.response({
-        status: 'fail',
-        message: 'Gagal memperbarui buku. Id tidak ditemukan',
-    }).code(404);
+
+    if (parseInt(readPage) > parseInt(pageCount)) 
+    {
+        return h.response({
+            status: "fail",
+            message: "Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount",
+        }).code(400)
+    }
 };
 
 
@@ -197,22 +199,17 @@ const deleteItemByIdHandler = (request, h) => {
     if (index !== -1) {
       items.splice(index, 1);
   
-      const response = h
-        .response({
+      return h.response({
           status: 'success',
           message: 'Buku berhasil dihapus',
         })
         .code(200);
-      return response;
     }
-  
-    const response = h
-      .response({
+    
+    return h.response({
         status: 'fail',
         message: 'Buku gagal dihapus. Id tidak ditemukan',
-      })
-      .code(404);
-    return response;
+    }).code(404);
   };
 
 
